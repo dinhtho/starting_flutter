@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:starting_flutter/model/FriendsModel.dart';
 
 class FriendsPage extends StatefulWidget {
@@ -11,73 +12,65 @@ class FriendsPage extends StatefulWidget {
 }
 
 class FriendsState extends State<FriendsPage> {
-
   bool _isProgressBarShown = true;
   final _biggerFont = const TextStyle(fontSize: 18.0);
-  List<FriendsModel> _listFriends;
+  List<FriendsModel> _listFriends = new List();
+  ScrollController controller;
 
   @override
   void initState() {
     super.initState();
     _fetchFriendsList();
+    controller = new ScrollController()..addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    controller.removeListener(_scrollListener);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    Stack stack = new Stack(children: <Widget>[
+      new RefreshIndicator(
+          onRefresh: _handleReresh,
+          child: new ListView.builder(
+              itemCount: _listFriends.length,
+              controller: controller,
+              itemBuilder: (context, i) {
+                return _buildRow(_listFriends[i], i);
+              }))
+    ]);
 
-    Widget widget;
-
-    if(_isProgressBarShown) {
-      widget = new Center(
-          child: new Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0),
-              child: new CircularProgressIndicator()
-          )
-      );
-    }else {
-      //TODO: search how to stop ListView going infinite list
-      widget =  new ListView.builder(
-          shrinkWrap:true,
-          padding: const EdgeInsets.all(0.0),
-
-          itemBuilder: (context, i) {
-            if (i.isOdd) return new Divider();
-            return _buildRow(_listFriends[i]);
-          }
-      );
+    if (_isProgressBarShown) {
+      stack.children.add(new Center(child: new CircularProgressIndicator()));
     }
 
-    return new Scaffold(
-      appBar: new AppBar(
-        title: new Text("Friends"),
-      ),
-      body: widget,
-    );
+    return new Scaffold(body: stack);
   }
 
-  Widget _buildRow(FriendsModel friendsModel) {
-
+  Widget _buildRow(FriendsModel friendsModel, int i) {
     return new ListTile(
       leading: new CircleAvatar(
         backgroundColor: Colors.grey,
         backgroundImage: new NetworkImage(friendsModel.profileImageUrl),
       ),
-      title: new Text(friendsModel.name,
+      title: new Text(
+        friendsModel.name,
         style: _biggerFont,
       ),
       subtitle: new Text(friendsModel.email),
-
       onTap: () {
-        setState(() {
-        });
+        print('click' + i.toString());
+        setState(() {});
       },
     );
   }
 
   _fetchFriendsList() async {
-
     _isProgressBarShown = true;
-    var url = 'https://randomuser.me/api/?results=100&nat=us';
+    var url = 'https://randomuser.me/api/?results=10&nat=us';
     var httpClient = new HttpClient();
 
     List<FriendsModel> listFriends = new List<FriendsModel>();
@@ -90,11 +83,13 @@ class FriendsState extends State<FriendsPage> {
 
         for (var res in data['results']) {
           var objName = res['name'];
-          String name = objName['first'].toString() + " " +objName['last'].toString();
+          String name =
+              objName['first'].toString() + " " + objName['last'].toString();
 
           var objImage = res['picture'];
           String profileUrl = objImage['large'].toString();
-          FriendsModel friendsModel = new FriendsModel(name, res['email'], profileUrl);
+          FriendsModel friendsModel =
+              new FriendsModel(name, res['email'], profileUrl);
           listFriends.add(friendsModel);
           print(friendsModel.profileImageUrl);
         }
@@ -106,9 +101,26 @@ class FriendsState extends State<FriendsPage> {
     if (!mounted) return;
 
     setState(() {
-      _listFriends = listFriends;
+      _listFriends.addAll(listFriends);
       _isProgressBarShown = false;
     });
+  }
 
+  void _scrollListener() {
+    print(controller.position.extentAfter);
+    if (controller.position.extentAfter == 0) {
+      setState(() {
+        _isProgressBarShown = true;
+      });
+      _fetchFriendsList();
+    }
+  }
+
+  Future _handleReresh() async {
+    setState(() {
+      _listFriends.clear();
+    });
+    await _fetchFriendsList();
+    return null;
   }
 }
