@@ -3,25 +3,24 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 import 'package:starting_flutter/model/FriendsModel.dart';
+import 'item.dart';
+import '../detail_profile/profile.dart';
 
 class FriendsPage extends StatefulWidget {
-  FriendsPage({Key key}) : super(key: key);
-
   @override
-  FriendsState createState() => new FriendsState();
+  FriendsState createState() => FriendsState();
 }
 
 class FriendsState extends State<FriendsPage> {
-  bool _isProgressBarShown = true;
-  final _biggerFont = const TextStyle(fontSize: 18.0);
-  List<FriendsModel> _listFriends = new List();
+  bool isProgressBarShown = true;
+  List<FriendsModel> listFriends = List();
   ScrollController controller;
 
   @override
   void initState() {
     super.initState();
     _fetchFriendsList();
-    controller = new ScrollController()..addListener(_scrollListener);
+    controller = ScrollController()..addListener(_scrollListener);
   }
 
   @override
@@ -32,48 +31,33 @@ class FriendsState extends State<FriendsPage> {
 
   @override
   Widget build(BuildContext context) {
-    Stack stack = new Stack(children: <Widget>[
-      new RefreshIndicator(
-          onRefresh: _handleReresh,
-          child: new ListView.builder(
-              itemCount: _listFriends.length,
+    Stack stack = Stack(children: <Widget>[
+      RefreshIndicator(
+          onRefresh: _handleRefresh,
+          child: ListView.builder(
+              itemCount: listFriends.length,
               controller: controller,
               itemBuilder: (context, i) {
-                return _buildRow(_listFriends[i], i);
+                return MyRow(
+                  friendsModel: listFriends[i],
+                  position: i,
+                  onItemAction: onItemAction,
+                );
               }))
     ]);
 
-    if (_isProgressBarShown) {
-      stack.children.add(new Center(child: new CircularProgressIndicator()));
+    if (isProgressBarShown) {
+      stack.children.add(Center(child: CircularProgressIndicator()));
     }
-
-    return new Scaffold(body: stack);
-  }
-
-  Widget _buildRow(FriendsModel friendsModel, int i) {
-    return new ListTile(
-      leading: new CircleAvatar(
-        backgroundColor: Colors.grey,
-        backgroundImage: new NetworkImage(friendsModel.profileImageUrl),
-      ),
-      title: new Text(
-        friendsModel.name,
-        style: _biggerFont,
-      ),
-      subtitle: new Text(friendsModel.email),
-      onTap: () {
-        print('click' + i.toString());
-        setState(() {});
-      },
-    );
+    return stack;
   }
 
   _fetchFriendsList() async {
-    _isProgressBarShown = true;
+    isProgressBarShown = true;
     var url = 'https://randomuser.me/api/?results=10&nat=us';
-    var httpClient = new HttpClient();
+    var httpClient = HttpClient();
 
-    List<FriendsModel> listFriends = new List<FriendsModel>();
+    List<FriendsModel> listFriends = List<FriendsModel>();
     try {
       var request = await httpClient.getUrl(Uri.parse(url));
       var response = await request.close();
@@ -89,7 +73,7 @@ class FriendsState extends State<FriendsPage> {
           var objImage = res['picture'];
           String profileUrl = objImage['large'].toString();
           FriendsModel friendsModel =
-              new FriendsModel(name, res['email'], profileUrl);
+              FriendsModel(name, res['email'], profileUrl);
           listFriends.add(friendsModel);
           print(friendsModel.profileImageUrl);
         }
@@ -101,8 +85,8 @@ class FriendsState extends State<FriendsPage> {
     if (!mounted) return;
 
     setState(() {
-      _listFriends.addAll(listFriends);
-      _isProgressBarShown = false;
+      this.listFriends.addAll(listFriends);
+      isProgressBarShown = false;
     });
   }
 
@@ -110,17 +94,34 @@ class FriendsState extends State<FriendsPage> {
     print(controller.position.extentAfter);
     if (controller.position.extentAfter == 0) {
       setState(() {
-        _isProgressBarShown = true;
+        isProgressBarShown = true;
       });
       _fetchFriendsList();
     }
   }
 
-  Future _handleReresh() async {
+  Future _handleRefresh() async {
     setState(() {
-      _listFriends.clear();
+      listFriends.clear();
     });
     await _fetchFriendsList();
     return null;
+  }
+
+  onItemAction(ItemActionType actionType, int position) {
+    print('actionType $actionType');
+    print('position $position');
+    if (actionType == ItemActionType.delete) {
+      setState(() {
+        listFriends.removeAt(position);
+      });
+    } else if (actionType == ItemActionType.more) {
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => Profile(
+                    friendsModel: listFriends[position],
+                  )));
+    }
   }
 }
