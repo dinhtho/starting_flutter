@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:starting_flutter/model/user.dart';
 import 'item_user.dart';
 import 'package:starting_flutter/ui/detail_profile/profile.dart';
+import 'package:starting_flutter/ui/users/users_screen_bloc.dart';
 
 class UsersScreen extends StatefulWidget {
   @override
@@ -15,11 +16,12 @@ class UsersState extends State<UsersScreen> {
   bool isLoading = true;
   List<User> users = List();
   ScrollController controller;
+  final usersScreenBloc = UsersScreenBloc();
 
   @override
   void initState() {
     super.initState();
-    getUsers();
+    usersScreenBloc.getUsers();
     controller = ScrollController()..addListener(_scrollListener);
   }
 
@@ -52,50 +54,13 @@ class UsersState extends State<UsersScreen> {
     return stack;
   }
 
-  getUsers() async {
-    isLoading = true;
-    var url = 'https://randomuser.me/api/?results=10&nat=us';
-    var httpClient = HttpClient();
-
-    List<User> users = List<User>();
-    try {
-      var request = await httpClient.getUrl(Uri.parse(url));
-      var response = await request.close();
-      if (response.statusCode == HttpStatus.OK) {
-        var jsonString = await response.transform(utf8.decoder).join();
-        Map data = json.decode(jsonString);
-
-        for (var res in data['results']) {
-          var objName = res['name'];
-          String name =
-              objName['first'].toString() + " " + objName['last'].toString();
-
-          final objImage = res['picture'];
-          String profileUrl = objImage['large'].toString();
-          User user = User(
-              name: name, email: res['email'], profileImageUrl: profileUrl);
-          users.add(user);
-        }
-      }
-    } catch (exception) {
-      print(exception.toString());
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      this.users.addAll(users);
-      isLoading = false;
-    });
-  }
-
   void _scrollListener() {
     print(controller.position.extentAfter);
     if (controller.position.extentAfter == 0) {
       setState(() {
         isLoading = true;
       });
-      getUsers();
+      usersScreenBloc.getUsers();
     }
   }
 
@@ -103,7 +68,7 @@ class UsersState extends State<UsersScreen> {
     setState(() {
       users.clear();
     });
-    await getUsers();
+    await usersScreenBloc.getUsers();
     return null;
   }
 
