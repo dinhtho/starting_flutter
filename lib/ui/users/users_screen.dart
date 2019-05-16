@@ -13,7 +13,6 @@ class UsersScreen extends StatefulWidget {
 }
 
 class UsersState extends State<UsersScreen> {
-  bool isLoading = true;
   List<User> users = List();
   ScrollController controller;
   final usersScreenBloc = UsersScreenBloc();
@@ -33,7 +32,23 @@ class UsersState extends State<UsersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Stack stack = Stack(children: <Widget>[
+    return Container(
+      child: StreamBuilder(
+          stream: usersScreenBloc.getUserList,
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              users = snapshot.data;
+              return _buildList();
+            } else if (snapshot.hasData) {
+              print(snapshot.error);
+            }
+            return Center(child: CircularProgressIndicator());
+          }),
+    );
+  }
+
+  Widget _buildList() {
+    return Stack(children: <Widget>[
       RefreshIndicator(
           onRefresh: _handleRefresh,
           child: ListView.builder(
@@ -47,29 +62,16 @@ class UsersState extends State<UsersScreen> {
                 );
               }))
     ]);
-
-    if (isLoading) {
-      stack.children.add(Center(child: CircularProgressIndicator()));
-    }
-    return stack;
   }
 
   void _scrollListener() {
-    print(controller.position.extentAfter);
     if (controller.position.extentAfter == 0) {
-      setState(() {
-        isLoading = true;
-      });
-      usersScreenBloc.getUsers();
+//      usersScreenBloc.getUsers();
     }
   }
 
-  Future _handleRefresh() async {
-    setState(() {
-      users.clear();
-    });
-    await usersScreenBloc.getUsers();
-    return null;
+  Future _handleRefresh() {
+   return usersScreenBloc.getUsers();
   }
 
   onItemAction(ItemActionType actionType, int position) {

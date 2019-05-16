@@ -11,8 +11,6 @@ class UserItem extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() => UserItemState();
-
-
 }
 
 class UserItemState extends State<UserItem> {
@@ -21,15 +19,10 @@ class UserItemState extends State<UserItem> {
   ItemActionCallback onItemAction;
 
   @override
-  void initState() {
-    super.initState();
+  Widget build(BuildContext context) {
     user = widget.user;
     position = widget.position;
     onItemAction = widget.onItemAction;
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return new Slidable(
       delegate: new SlidableDrawerDelegate(),
       actionExtentRatio: 0.25,
@@ -41,7 +34,7 @@ class UserItemState extends State<UserItem> {
             backgroundImage: NetworkImage(user.profileImageUrl),
           ),
           title: Text(
-            user.name,
+            widget.user.name,
             style: TextStyle(fontSize: 18.0),
           ),
           subtitle: Text(user.email),
