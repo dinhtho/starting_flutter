@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:starting_flutter/model/FriendsModel.dart';
+import 'package:starting_flutter/model/user.dart';
 
 class Profile extends StatefulWidget {
-  FriendsModel friendsModel;
+  User user;
 
-  Profile({@required this.friendsModel});
+  Profile({@required this.user});
 
   @override
   State createState() => ProfileStage();
@@ -16,7 +16,7 @@ class ProfileStage extends State<Profile> {
     return Scaffold(
       appBar: AppBar(title: Text("Profile")),
       body: Column(
-        children: <Widget>[Text(widget.friendsModel.name)],
+        children: <Widget>[Text(widget.user.name)],
       ),
     );
   }

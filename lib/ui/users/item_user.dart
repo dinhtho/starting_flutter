@@ -1,13 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:starting_flutter/model/FriendsModel.dart';
+import 'package:starting_flutter/model/user.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
-class MyRow extends StatelessWidget {
-  FriendsModel friendsModel;
+class UserItem extends StatefulWidget {
+  User user;
   int position;
   ItemActionCallback onItemAction;
 
-  MyRow({@required this.friendsModel, this.position, this.onItemAction});
+  UserItem({@required this.user, this.position, this.onItemAction});
+
+  @override
+  State<StatefulWidget> createState() => UserItemState();
+
+
+}
+
+class UserItemState extends State<UserItem> {
+  User user;
+  int position;
+  ItemActionCallback onItemAction;
+
+  @override
+  void initState() {
+    super.initState();
+    user = widget.user;
+    position = widget.position;
+    onItemAction = widget.onItemAction;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,13 +38,13 @@ class MyRow extends StatelessWidget {
         child: ListTile(
           leading: CircleAvatar(
             backgroundColor: Colors.grey,
-            backgroundImage: NetworkImage(friendsModel.profileImageUrl),
+            backgroundImage: NetworkImage(user.profileImageUrl),
           ),
           title: Text(
-            friendsModel.name,
+            user.name,
             style: TextStyle(fontSize: 18.0),
           ),
-          subtitle: Text(friendsModel.email),
+          subtitle: Text(user.email),
           onTap: () => onItemAction(ItemActionType.item, position),
         ),
       ),

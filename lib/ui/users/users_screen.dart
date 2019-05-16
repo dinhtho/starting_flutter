@@ -2,24 +2,24 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
-import 'package:starting_flutter/model/FriendsModel.dart';
-import 'item.dart';
-import '../detail_profile/profile.dart';
+import 'package:starting_flutter/model/user.dart';
+import 'item_user.dart';
+import 'package:starting_flutter/ui/detail_profile/profile.dart';
 
-class FriendsPage extends StatefulWidget {
+class UsersScreen extends StatefulWidget {
   @override
-  FriendsState createState() => FriendsState();
+  UsersState createState() => UsersState();
 }
 
-class FriendsState extends State<FriendsPage> {
-  bool isProgressBarShown = true;
-  List<FriendsModel> listFriends = List();
+class UsersState extends State<UsersScreen> {
+  bool isLoading = true;
+  List<User> users = List();
   ScrollController controller;
 
   @override
   void initState() {
     super.initState();
-    _fetchFriendsList();
+    getUsers();
     controller = ScrollController()..addListener(_scrollListener);
   }
 
@@ -35,29 +35,29 @@ class FriendsState extends State<FriendsPage> {
       RefreshIndicator(
           onRefresh: _handleRefresh,
           child: ListView.builder(
-              itemCount: listFriends.length,
+              itemCount: users.length,
               controller: controller,
               itemBuilder: (context, i) {
-                return MyRow(
-                  friendsModel: listFriends[i],
+                return UserItem(
+                  user: users[i],
                   position: i,
                   onItemAction: onItemAction,
                 );
               }))
     ]);
 
-    if (isProgressBarShown) {
+    if (isLoading) {
       stack.children.add(Center(child: CircularProgressIndicator()));
     }
     return stack;
   }
 
-  _fetchFriendsList() async {
-    isProgressBarShown = true;
+  getUsers() async {
+    isLoading = true;
     var url = 'https://randomuser.me/api/?results=10&nat=us';
     var httpClient = HttpClient();
 
-    List<FriendsModel> listFriends = List<FriendsModel>();
+    List<User> users = List<User>();
     try {
       var request = await httpClient.getUrl(Uri.parse(url));
       var response = await request.close();
@@ -70,12 +70,11 @@ class FriendsState extends State<FriendsPage> {
           String name =
               objName['first'].toString() + " " + objName['last'].toString();
 
-          var objImage = res['picture'];
+          final objImage = res['picture'];
           String profileUrl = objImage['large'].toString();
-          FriendsModel friendsModel =
-              FriendsModel(name, res['email'], profileUrl);
-          listFriends.add(friendsModel);
-          print(friendsModel.profileImageUrl);
+          User user = User(
+              name: name, email: res['email'], profileImageUrl: profileUrl);
+          users.add(user);
         }
       }
     } catch (exception) {
@@ -85,8 +84,8 @@ class FriendsState extends State<FriendsPage> {
     if (!mounted) return;
 
     setState(() {
-      this.listFriends.addAll(listFriends);
-      isProgressBarShown = false;
+      this.users.addAll(users);
+      isLoading = false;
     });
   }
 
@@ -94,17 +93,17 @@ class FriendsState extends State<FriendsPage> {
     print(controller.position.extentAfter);
     if (controller.position.extentAfter == 0) {
       setState(() {
-        isProgressBarShown = true;
+        isLoading = true;
       });
-      _fetchFriendsList();
+      getUsers();
     }
   }
 
   Future _handleRefresh() async {
     setState(() {
-      listFriends.clear();
+      users.clear();
     });
-    await _fetchFriendsList();
+    await getUsers();
     return null;
   }
 
@@ -113,14 +112,14 @@ class FriendsState extends State<FriendsPage> {
     print('position $position');
     if (actionType == ItemActionType.delete) {
       setState(() {
-        listFriends.removeAt(position);
+        users.removeAt(position);
       });
     } else if (actionType == ItemActionType.more) {
       Navigator.push(
           context,
           MaterialPageRoute(
               builder: (context) => Profile(
-                    friendsModel: listFriends[position],
+                    user: users[position],
                   )));
     }
   }

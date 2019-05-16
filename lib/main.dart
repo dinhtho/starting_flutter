@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:starting_flutter/friends_page/friends_list_page.dart';
+import 'package:starting_flutter/ui/users/users_screen.dart';
 
 void main() =>
     runApp(MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: Text("Flutter Demo"),
+          title: Text("Home"),
         ),
-        body: FriendsPage(),
+        body: UsersScreen(),
       ),
     ));
