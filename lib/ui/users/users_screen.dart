@@ -13,15 +13,22 @@ class UsersScreen extends StatefulWidget {
 }
 
 class UsersState extends State<UsersScreen> {
-  List<User> users = List();
+  List<User> users;
   ScrollController controller;
   final usersScreenBloc = UsersScreenBloc();
+  bool isLoadMore = false;
 
   @override
   void initState() {
     super.initState();
-    usersScreenBloc.getUsers();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => usersScreenBloc.getUsers());
     controller = ScrollController()..addListener(_scrollListener);
+    usersScreenBloc.getUserList.where((e) => e.error != null).listen((e) {
+      Scaffold.of(context).showSnackBar(new SnackBar(
+        content: new Text(e.error.toString()),
+      ));
+    });
   }
 
   @override
@@ -33,45 +40,54 @@ class UsersState extends State<UsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      child: StreamBuilder(
-          stream: usersScreenBloc.getUserList,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              users = snapshot.data;
-              return _buildList();
-            } else if (snapshot.hasData) {
-              print(snapshot.error);
-            }
-            return Center(child: CircularProgressIndicator());
-          }),
-    );
-  }
-
-  Widget _buildList() {
-    return Stack(children: <Widget>[
+        child: Stack(children: <Widget>[
       RefreshIndicator(
           onRefresh: _handleRefresh,
-          child: ListView.builder(
-              itemCount: users.length,
-              controller: controller,
-              itemBuilder: (context, i) {
-                return UserItem(
-                  user: users[i],
-                  position: i,
-                  onItemAction: onItemAction,
-                );
-              }))
-    ]);
+          child: StreamBuilder(stream: usersScreenBloc.getUserList.where((e) {
+            return e?.data != null;
+          }), builder: (context, snapshot) {
+            if (snapshot.data != null) {
+              if (isLoadMore) {
+                users.addAll(snapshot.data.data);
+                isLoadMore = false;
+              } else {
+                users = snapshot.data.data;
+              }
+              return ListView.builder(
+                  itemCount: users.length,
+                  controller: controller,
+                  itemBuilder: (context, i) {
+                    return UserItem(
+                      user: users[i],
+                      position: i,
+                      onItemAction: onItemAction,
+                    );
+                  });
+            }
+            return Container();
+          })),
+      StreamBuilder(stream: usersScreenBloc.getUserList.where((e) {
+        return e?.isLoading != null;
+      }), builder: (context, snapshot) {
+        if (snapshot.data != null && snapshot.data.isLoading) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+        return Container();
+      }),
+    ]));
   }
 
   void _scrollListener() {
     if (controller.position.extentAfter == 0) {
-//      usersScreenBloc.getUsers();
+      isLoadMore = true;
+      usersScreenBloc.getUsers();
     }
   }
 
   Future _handleRefresh() {
-   return usersScreenBloc.getUsers();
+    return usersScreenBloc.getUsers();
   }
 
   onItemAction(ItemActionType actionType, int position) {

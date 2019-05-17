@@ -1,78 +1,47 @@
 import 'package:starting_flutter/network/network.dart';
 import 'package:starting_flutter/model/user.dart';
 import 'dart:async';
+import 'package:starting_flutter/model/base_response.dart';
 
 class UsersScreenBloc {
-  StreamController _streamController = StreamController();
+  StreamController _streamController = StreamController.broadcast();
 
-  get getUserList => _streamController.stream;
+  Stream get getUserList => _streamController.stream;
 
- Future getUsers() {
-    Future call = NetworkProvider()
-        .get('https://randomuser.me/api/?results=10&nat=us');
+  Future getUsers() {
+    Future call =
+        NetworkProvider().get('https://randomuser.me/api/a/?results=10&nat=us');
     Network.request(
         call: call,
         doOnSubscribe: () {
-          print("loading");
+          _streamController.sink.add(BaseResponse(isLoading: true));
         },
         doOnTerminate: () {
-          print("hide loading");
+          _streamController.sink.add(BaseResponse(isLoading: false));
         },
         onSuccess: (data) {
-          final users = List<User>();
-          for (var res in data['results']) {
-            var objName = res['name'];
-            String name =
-                objName['first'].toString() + " " + objName['last'].toString();
-
-            final objImage = res['picture'];
-            String profileUrl = objImage['large'].toString();
-            User user = User(
-                name: name, email: res['email'], profileImageUrl: profileUrl);
-            users.add(user);
-          }
-          _streamController.sink.add(users);
+          final users = parseJson(data);
+          _streamController.sink.add(BaseResponse<List<User>>(data: users));
         },
         onError: (error) {
-          print(error);
+          _streamController.sink.add(BaseResponse(error: error));
         });
     return call;
   }
 
-//    isLoading = true;
-//    var url = 'https://randomuser.me/api/?results=10&nat=us';
-//    var httpClient = HttpClient();
-//
-//    List<User> users = List<User>();
-//    try {
-//      var request = await httpClient.getUrl(Uri.parse(url));
-//      var response = await request.close();
-//      if (response.statusCode == HttpStatus.OK) {
-//        var jsonString = await response.transform(utf8.decoder).join();
-//        Map data = json.decode(jsonString);
-//
-//        for (var res in data['results']) {
-//          var objName = res['name'];
-//          String name =
-//              objName['first'].toString() + " " + objName['last'].toString();
-//
-//          final objImage = res['picture'];
-//          String profileUrl = objImage['large'].toString();
-//          User user = User(
-//              name: name, email: res['email'], profileImageUrl: profileUrl);
-//          users.add(user);
-//        }
-//      }
-//    } catch (exception) {
-//      print(exception.toString());
-//    }
-//
-//    if (!mounted) return;
-//
-//    setState(() {
-//      this.users.addAll(users);
-//      isLoading = false;
-//    });
-//  }
+  List<User> parseJson(Map<String, dynamic> data) {
+    final users = List<User>();
+    for (var res in data['results']) {
+      var objName = res['name'];
+      String name =
+          objName['first'].toString() + " " + objName['last'].toString();
 
+      final objImage = res['picture'];
+      String profileUrl = objImage['large'].toString();
+      User user =
+          User(name: name, email: res['email'], profileImageUrl: profileUrl);
+      users.add(user);
+    }
+    return users;
+  }
 }
