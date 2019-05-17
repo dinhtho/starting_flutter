@@ -10,7 +10,7 @@ class UsersScreenBloc {
 
   Future getUsers() {
     Future call =
-        NetworkProvider().get('https://randomuser.me/api/a/?results=10&nat=us');
+        NetworkProvider().get('https://randomuser.me/api/?results=10&nat=us');
     Network.request(
         call: call,
         doOnSubscribe: () {
