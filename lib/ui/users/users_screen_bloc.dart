@@ -9,7 +9,7 @@ class UsersScreenBloc {
   Stream get getUserList => _streamController.stream;
 
   Future getUsers() {
-    Future call =
+    final call =
         NetworkProvider().get('https://randomuser.me/api/?results=10&nat=us');
     Network.request(
         call: call,
@@ -25,6 +25,15 @@ class UsersScreenBloc {
         },
         onError: (error) {
           _streamController.sink.add(BaseResponse(error: error));
+        });
+
+    Network.multiRequest(
+        calls: [call, call],
+        doOnSubscribe: () {},
+        doOnTerminate: () {},
+        onError: (e) {},
+        onSuccess: (responses) {
+          print(responses);
         });
     return call;
   }
